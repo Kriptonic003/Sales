@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy
+scikit-learn
+numpy
+pydantic
+requests
+python-multipart
+
