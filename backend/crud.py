@@ -134,3 +134,18 @@ def get_sales_range(
         .order_by(models.SalesData.date)
         .all()
     )
+def get_social_posts_only(
+    db: Session,
+    product_name: str,
+    brand_name: str,
+    platform: str,
+):
+    return (
+        db.query(models.SocialPost)
+        .filter(
+            models.SocialPost.product_name == product_name,
+            models.SocialPost.brand_name == brand_name,
+            models.SocialPost.platform == platform,
+        )
+        .all()
+    )

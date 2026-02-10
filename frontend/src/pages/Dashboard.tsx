@@ -33,7 +33,11 @@ export default function DashboardPage() {
     setError("");
     try {
       const { data } = await api.get<DashboardResponse>("/get-dashboard-data", {
-        params: { product_name: "NeoGadget", brand_name: "BlueNova", platform: "Twitter" },
+        params: {
+          product_name: "NeoGadget",
+          brand_name: "BlueNova",
+          platform: "YouTube", // 🔒 Force YouTube
+        },
       });
       setData(data);
     } catch (err) {
@@ -53,12 +57,20 @@ export default function DashboardPage() {
     return "good";
   };
 
+  // ✅ Check if dashboard has meaningful data
+  const hasData =
+    data &&
+    data.comment_volume &&
+    data.comment_volume.length > 0;
+
   return (
     <div className="grid gap-4 lg:grid-cols-[1.6fr_0.9fr]">
       <div className="space-y-4">
+        {/* KPI SECTION */}
         <div className="grid gap-3 md:grid-cols-4 sm:grid-cols-2">
           {loading && <LoadingSkeleton lines={4} />}
-          {!loading && data && (
+
+          {!loading && data && hasData && (
             <>
               <KPICard
                 label="Average Sentiment"
@@ -69,7 +81,7 @@ export default function DashboardPage() {
               <KPICard
                 label="% Negative"
                 value={`${data.kpis.negative_percentage.toFixed(1)}%`}
-                subtext="Twitter/Reddit blend"
+                subtext="YouTube comments"
                 tone={data.kpis.negative_percentage > 35 ? "bad" : "warn"}
               />
               <KPICard
@@ -78,80 +90,114 @@ export default function DashboardPage() {
                 subtext="Short-term"
                 tone={kpiTone(data.kpis.risk_level) as any}
               />
-              <KPICard label="Risk Level" value={data.kpis.risk_level} tone={kpiTone(data.kpis.risk_level) as any} />
+              <KPICard
+                label="Risk Level"
+                value={data.kpis.risk_level}
+                tone={kpiTone(data.kpis.risk_level) as any}
+              />
             </>
           )}
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2">
-          <ChartCard title="Sentiment Trend (30d)">
-            {loading && <LoadingSkeleton lines={6} />}
-            {!loading && data && (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data.sentiment_trend}>
-                  <XAxis dataKey="date" stroke="#9ca3af" hide />
-                  <YAxis stroke="#9ca3af" domain={[-1, 1]} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="average_sentiment" stroke="#38bdf8" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </ChartCard>
-          <ChartCard title="Sentiment Distribution">
-            {loading && <LoadingSkeleton lines={6} />}
-            {!loading && data && (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={Object.entries(data.sentiment_distribution).map(([name, value]) => ({ name, value }))}
-                    dataKey="value"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label
-                  >
-                    {Object.keys(data.sentiment_distribution).map((_, index) => (
-                      <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Legend />
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </ChartCard>
-        </div>
+        {/* NO DATA STATE */}
+        {!loading && data && !hasData && (
+          <div className="glass neon-border rounded-2xl p-5 text-slate-400">
+            No data available to display dashboard analytics.
+          </div>
+        )}
 
-        <div className="grid gap-3 md:grid-cols-2">
-          <ChartCard title="Comment Volume">
-            {loading && <LoadingSkeleton lines={6} />}
-            {!loading && data && (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.comment_volume}>
-                  <XAxis dataKey="date" stroke="#9ca3af" hide />
-                  <YAxis stroke="#9ca3af" />
-                  <Tooltip />
-                  <Bar dataKey="total_posts" fill="#22d3ee" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </ChartCard>
-          <ChartCard title="Actual vs Predicted Sales">
-            {loading && <LoadingSkeleton lines={6} />}
-            {!loading && data && (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data.sales_series}>
-                  <XAxis dataKey="date" stroke="#9ca3af" hide />
-                  <YAxis stroke="#9ca3af" />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="actual_revenue" stroke="#38bdf8" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="predicted_revenue" stroke="#22d3ee" strokeDasharray="4 4" dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </ChartCard>
-        </div>
+        {/* CHARTS */}
+        {!loading && data && hasData && (
+          <>
+            <div className="grid gap-3 md:grid-cols-2">
+              <ChartCard title="Sentiment Trend (30d)">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data.sentiment_trend}>
+                    <XAxis dataKey="date" stroke="#9ca3af" hide />
+                    <YAxis stroke="#9ca3af" domain={[-1, 1]} />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="average_sentiment"
+                      stroke="#38bdf8"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartCard>
 
+              <ChartCard title="Sentiment Distribution">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={Object.entries(data.sentiment_distribution).map(
+                        ([name, value]) => ({ name, value })
+                      )}
+                      dataKey="value"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      label
+                    >
+                      {Object.keys(data.sentiment_distribution).map((_, index) => (
+                        <Cell
+                          key={index}
+                          fill={PIE_COLORS[index % PIE_COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Legend />
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartCard>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <ChartCard title="Comment Volume">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.comment_volume}>
+                    <XAxis dataKey="date" stroke="#9ca3af" hide />
+                    <YAxis stroke="#9ca3af" />
+                    <Tooltip />
+                    <Bar
+                      dataKey="total_posts"
+                      fill="#22d3ee"
+                      radius={[6, 6, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard title="Actual vs Predicted Sales">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data.sales_series}>
+                    <XAxis dataKey="date" stroke="#9ca3af" hide />
+                    <YAxis stroke="#9ca3af" />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="actual_revenue"
+                      stroke="#38bdf8"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="predicted_revenue"
+                      stroke="#22d3ee"
+                      strokeDasharray="4 4"
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartCard>
+            </div>
+          </>
+        )}
+
+        {/* AI INSIGHTS */}
         <div className="glass neon-border rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-white">AI Insights</h3>
@@ -162,33 +208,45 @@ export default function DashboardPage() {
               Refresh
             </button>
           </div>
+
           {loading && <LoadingSkeleton lines={4} />}
-          {!loading && data && (
+
+          {!loading && data && hasData && (
             <ul className="mt-3 space-y-2 text-slate-200">
               {data.ai_insights.map((i, idx) => (
-                <li key={idx} className="rounded-lg bg-slate-900/60 px-3 py-2">
+                <li
+                  key={idx}
+                  className="rounded-lg bg-slate-900/60 px-3 py-2"
+                >
                   {i}
                 </li>
               ))}
             </ul>
           )}
         </div>
-        {data?.alerts?.length ? data.alerts.map((a, idx) => <AlertBanner key={idx} message={a} tone="warn" />) : null}
+
+        {data?.alerts?.length
+          ? data.alerts.map((a, idx) => (
+              <AlertBanner key={idx} message={a} tone="warn" />
+            ))
+          : null}
       </div>
 
+      {/* RIGHT PANEL */}
       <div className="space-y-4">
         <ChatPanel />
         <div className="glass neon-border rounded-2xl p-4">
           <h3 className="text-lg font-semibold text-white">Explanation</h3>
           <p className="mt-2 text-sm text-slate-300">
-            We aggregate daily sentiment, classify polarity, and blend with historical revenue. Logistic regression
-            estimates loss probability; linear regression projects near-term revenue. Alerts trigger when probability or
-            negative share crosses thresholds.
+            We aggregate YouTube comment sentiment, classify polarity, and blend
+            with historical revenue. Logistic regression estimates loss
+            probability; linear regression projects near-term revenue. Alerts
+            trigger when probability or negative share crosses thresholds.
           </p>
         </div>
       </div>
+
       {error && <AlertBanner message={error} tone="error" />}
     </div>
   );
 }
-
