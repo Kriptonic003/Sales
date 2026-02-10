@@ -149,3 +149,55 @@ def get_social_posts_only(
         )
         .all()
     )
+def save_youtube_comments(
+    db: Session,
+    product_name: str,
+    brand_name: str,
+    comments: list,
+):
+    saved_posts = []
+
+    for c in comments:
+        post = models.SocialPost(
+            platform="YouTube",
+            product_name=product_name,
+            brand_name=brand_name,
+            content=c["content"],
+            posted_at=c["posted_at"],
+        )
+        db.add(post)
+        saved_posts.append(post)
+
+    db.commit()
+    return saved_posts
+from datetime import datetime
+import models
+
+def save_youtube_comments(
+    db,
+    product_name: str,
+    brand_name: str,
+    platform: str,
+    comments: list,
+):
+    saved_posts = []
+
+    for c in comments:
+        post = models.SocialPost(
+            product_name=product_name,
+            brand_name=brand_name,
+            platform=platform,
+            content=c["text"],
+            posted_at=datetime.fromisoformat(
+                c["published_at"].replace("Z", "")
+            ).date(),
+        )
+        db.add(post)
+        saved_posts.append(post)
+
+    db.commit()
+
+    for post in saved_posts:
+        db.refresh(post)
+
+    return saved_posts
