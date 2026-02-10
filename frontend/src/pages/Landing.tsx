@@ -27,7 +27,7 @@ export default function LandingPage() {
           <div className="text-sm font-semibold text-cyan-200">How it works</div>
           <ol className="mt-3 space-y-3 text-slate-200">
             <li>
-              <span className="font-semibold text-cyan-300">1.</span> Pull Twitter/Reddit posts for your product.
+              <span className="font-semibold text-cyan-300">1.</span> Pull Youtube videos for your product.
             </li>
             <li>
               <span className="font-semibold text-cyan-300">2.</span> Run sentiment + volume signals vs sales history.

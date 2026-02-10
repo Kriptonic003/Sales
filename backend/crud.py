@@ -3,14 +3,16 @@ from typing import List, Optional
 import random
 
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
 
 import models
 import schemas
 
 
+def get_or_create_social_posts(
+    db: Session,
+    req: schemas.SentimentAnalysisRequest
+) -> List[models.SocialPost]:
 
-def get_or_create_social_posts(db: Session, req: schemas.SentimentAnalysisRequest) -> List[models.SocialPost]:
     posts = (
         db.query(models.SocialPost)
         .filter(
@@ -22,20 +24,26 @@ def get_or_create_social_posts(db: Session, req: schemas.SentimentAnalysisReques
         )
         .all()
     )
+
     if posts:
         return posts
-    # If no posts in range, generate a few synthetic ones (in practice you would fetch from APIs)
+
+    # If no posts in range, generate synthetic YouTube comments
     days = (req.end_date - req.start_date).days + 1
+
     for i in range(days * 5):
         dt = req.start_date + (req.end_date - req.start_date) * random.random()
+
         post = models.SocialPost(
             platform=req.platform,
             product_name=req.product_name,
             brand_name=req.brand_name,
             posted_at=date.fromordinal(int(dt.toordinal())),
-            content=f"Synthetic {req.platform} post {i} about {req.product_name}",
+            content=f"Synthetic YouTube comment {i} on {req.product_name}",
         )
+
         db.add(post)
+
     db.commit()
     return get_or_create_social_posts(db, req)
 
@@ -47,19 +55,25 @@ def get_comments(
     platform: str,
     sentiment_filter: Optional[str] = None,
 ) -> List[models.SocialPost]:
+
     query = (
         db.query(models.SocialPost)
-        .join(models.SentimentScore, models.SentimentScore.post_id == models.SocialPost.id, isouter=True)
+        .join(
+            models.SentimentScore,
+            models.SentimentScore.post_id == models.SocialPost.id,
+            isouter=True,
+        )
         .filter(
             models.SocialPost.product_name == product_name,
             models.SocialPost.brand_name == brand_name,
             models.SocialPost.platform == platform,
         )
     )
+
     if sentiment_filter:
         query = query.filter(models.SentimentScore.sentiment_label == sentiment_filter)
-    posts = query.all()
-    return posts
+
+    return query.all()
 
 
 def upsert_prediction(
@@ -72,6 +86,7 @@ def upsert_prediction(
     risk_level: str,
     explanation: str,
 ) -> models.Prediction:
+
     pred = (
         db.query(models.Prediction)
         .filter(
@@ -81,6 +96,7 @@ def upsert_prediction(
         )
         .first()
     )
+
     if not pred:
         pred = models.Prediction(
             product_name=product_name,
@@ -88,10 +104,12 @@ def upsert_prediction(
             date=date_value,
         )
         db.add(pred)
+
     pred.loss_probability = loss_probability
     pred.predicted_drop_percentage = drop_pct
     pred.risk_level = risk_level
     pred.explanation = explanation
+
     db.commit()
     db.refresh(pred)
     return pred
@@ -104,6 +122,7 @@ def get_sales_range(
     start_date: date,
     end_date: date,
 ) -> List[models.SalesData]:
+
     return (
         db.query(models.SalesData)
         .filter(
@@ -115,5 +134,3 @@ def get_sales_range(
         .order_by(models.SalesData.date)
         .all()
     )
-
-
