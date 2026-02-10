@@ -25,21 +25,21 @@ const PIE_COLORS = ["#22d3ee", "#38bdf8", "#6366f1"];
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardResponse | null>(null);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
     setError("");
     try {
-      const { data } = await api.get<DashboardResponse>("/get-dashboard-data", {
+      const res = await api.get<DashboardResponse>("/get-dashboard-data", {
         params: {
           product_name: "NeoGadget",
           brand_name: "BlueNova",
-          platform: "YouTube", // 🔒 Force YouTube
+          platform: "YouTube", // 🔒 Locked to YouTube
         },
       });
-      setData(data);
+      setData(res.data);
     } catch (err) {
       setError(formatError(err));
     } finally {
@@ -51,26 +51,31 @@ export default function DashboardPage() {
     fetchData();
   }, []);
 
+  const hasComments =
+    data &&
+    Array.isArray(data.comment_volume) &&
+    data.comment_volume.length > 0;
+
+  const hasSales =
+    data &&
+    Array.isArray(data.sales_series) &&
+    data.sales_series.length > 0;
+
   const kpiTone = (risk: string) => {
     if (risk === "High") return "bad";
     if (risk === "Medium") return "warn";
     return "good";
   };
 
-  // ✅ Check if dashboard has meaningful data
-  const hasData =
-    data &&
-    data.comment_volume &&
-    data.comment_volume.length > 0;
-
   return (
     <div className="grid gap-4 lg:grid-cols-[1.6fr_0.9fr]">
+      {/* LEFT SECTION */}
       <div className="space-y-4">
-        {/* KPI SECTION */}
+        {/* KPI CARDS */}
         <div className="grid gap-3 md:grid-cols-4 sm:grid-cols-2">
           {loading && <LoadingSkeleton lines={4} />}
 
-          {!loading && data && hasData && (
+          {!loading && data && hasComments && (
             <>
               <KPICard
                 label="Average Sentiment"
@@ -99,22 +104,22 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* NO DATA STATE */}
-        {!loading && data && !hasData && (
+        {/* NO DATA MESSAGE */}
+        {!loading && data && !hasComments && (
           <div className="glass neon-border rounded-2xl p-5 text-slate-400">
-            No data available to display dashboard analytics.
+            No YouTube comments available to display dashboard analytics.
           </div>
         )}
 
         {/* CHARTS */}
-        {!loading && data && hasData && (
+        {!loading && data && hasComments && (
           <>
             <div className="grid gap-3 md:grid-cols-2">
               <ChartCard title="Sentiment Trend (30d)">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={data.sentiment_trend}>
-                    <XAxis dataKey="date" stroke="#9ca3af" hide />
-                    <YAxis stroke="#9ca3af" domain={[-1, 1]} />
+                    <XAxis dataKey="date" hide />
+                    <YAxis domain={[-1, 1]} />
                     <Tooltip />
                     <Line
                       type="monotone"
@@ -140,12 +145,14 @@ export default function DashboardPage() {
                       outerRadius={80}
                       label
                     >
-                      {Object.keys(data.sentiment_distribution).map((_, index) => (
-                        <Cell
-                          key={index}
-                          fill={PIE_COLORS[index % PIE_COLORS.length]}
-                        />
-                      ))}
+                      {Object.keys(data.sentiment_distribution).map(
+                        (_, index) => (
+                          <Cell
+                            key={index}
+                            fill={PIE_COLORS[index % PIE_COLORS.length]}
+                          />
+                        )
+                      )}
                     </Pie>
                     <Legend />
                     <Tooltip />
@@ -155,81 +162,75 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-              <ChartCard title="Comment Volume">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.comment_volume}>
-                    <XAxis dataKey="date" stroke="#9ca3af" hide />
-                    <YAxis stroke="#9ca3af" />
-                    <Tooltip />
-                    <Bar
-                      dataKey="total_posts"
-                      fill="#22d3ee"
-                      radius={[6, 6, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
+              {hasComments && (
+                <ChartCard title="Comment Volume">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={data.comment_volume}>
+                      <XAxis dataKey="date" hide />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar
+                        dataKey="total_posts"
+                        fill="#22d3ee"
+                        radius={[6, 6, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+              )}
 
-              <ChartCard title="Actual vs Predicted Sales">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data.sales_series}>
-                    <XAxis dataKey="date" stroke="#9ca3af" hide />
-                    <YAxis stroke="#9ca3af" />
-                    <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="actual_revenue"
-                      stroke="#38bdf8"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="predicted_revenue"
-                      stroke="#22d3ee"
-                      strokeDasharray="4 4"
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartCard>
+              {hasSales && (
+                <ChartCard title="Actual vs Predicted Sales">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={data.sales_series}>
+                      <XAxis dataKey="date" hide />
+                      <YAxis />
+                      <Tooltip />
+                      <Line
+                        type="monotone"
+                        dataKey="actual_revenue"
+                        stroke="#38bdf8"
+                        dot={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="predicted_revenue"
+                        stroke="#22d3ee"
+                        strokeDasharray="4 4"
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+              )}
             </div>
           </>
         )}
 
         {/* AI INSIGHTS */}
-        <div className="glass neon-border rounded-2xl p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white">AI Insights</h3>
-            <button
-              onClick={fetchData}
-              className="rounded-lg border border-cyan-500/30 px-3 py-2 text-xs text-cyan-100 hover:border-cyan-400"
-            >
-              Refresh
-            </button>
-          </div>
+        {!loading && data && hasComments && (
+          <div className="glass neon-border rounded-2xl p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">AI Insights</h3>
+              <button
+                onClick={fetchData}
+                className="rounded-lg border border-cyan-500/30 px-3 py-2 text-xs text-cyan-100 hover:border-cyan-400"
+              >
+                Refresh
+              </button>
+            </div>
 
-          {loading && <LoadingSkeleton lines={4} />}
-
-          {!loading && data && hasData && (
             <ul className="mt-3 space-y-2 text-slate-200">
               {data.ai_insights.map((i, idx) => (
-                <li
-                  key={idx}
-                  className="rounded-lg bg-slate-900/60 px-3 py-2"
-                >
+                <li key={idx} className="rounded-lg bg-slate-900/60 px-3 py-2">
                   {i}
                 </li>
               ))}
             </ul>
-          )}
-        </div>
+          </div>
+        )}
 
-        {data?.alerts?.length
-          ? data.alerts.map((a, idx) => (
-              <AlertBanner key={idx} message={a} tone="warn" />
-            ))
-          : null}
+        {error && <AlertBanner message={error} tone="error" />}
       </div>
 
       {/* RIGHT PANEL */}
@@ -240,13 +241,10 @@ export default function DashboardPage() {
           <p className="mt-2 text-sm text-slate-300">
             We aggregate YouTube comment sentiment, classify polarity, and blend
             with historical revenue. Logistic regression estimates loss
-            probability; linear regression projects near-term revenue. Alerts
-            trigger when probability or negative share crosses thresholds.
+            probability; linear regression projects near-term revenue.
           </p>
         </div>
       </div>
-
-      {error && <AlertBanner message={error} tone="error" />}
     </div>
   );
 }
