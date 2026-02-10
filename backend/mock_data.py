@@ -3,7 +3,8 @@ import random
 
 from sqlalchemy.orm import Session
 
-from . import models
+import models
+
 
 
 def bootstrap_mock_data(db: Session):

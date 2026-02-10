@@ -5,7 +5,9 @@ import random
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
-from . import models, schemas
+import models
+import schemas
+
 
 
 def get_or_create_social_posts(db: Session, req: schemas.SentimentAnalysisRequest) -> List[models.SocialPost]:

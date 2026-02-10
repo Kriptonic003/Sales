@@ -5,7 +5,10 @@ import numpy as np
 from sqlalchemy.orm import Session
 from sklearn.linear_model import LogisticRegression, LinearRegression
 
-from .. import models, schemas, crud
+import models
+import schemas
+import crud
+
 
 
 class SentimentSummary:

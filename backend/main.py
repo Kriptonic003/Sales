@@ -3,10 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 
-from . import models, schemas, crud, database
-from .ml.pipeline import SentimentAndSalesPipeline
-from .mock_data import bootstrap_mock_data
-from .services.chatbot import generate_chat_response
+import models
+import schemas
+import crud
+import database
+
+from ml.pipeline import SentimentAndSalesPipeline
+from mock_data import bootstrap_mock_data
+from services.chatbot import generate_chat_response
+
 
 
 models.Base.metadata.create_all(bind=database.engine)
