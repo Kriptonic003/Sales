@@ -10,15 +10,12 @@ import LoadingSkeleton from "../components/LoadingSkeleton";
 export default function AnalyzePage() {
   const navigate = useNavigate();
 
-  // 🔒 Load initial values from localStorage
+  // 🔒 Persist inputs across navigation
   const [product, setProduct] = useState(
     localStorage.getItem("product_name") || "NeoGadget"
   );
   const [brand, setBrand] = useState(
     localStorage.getItem("brand_name") || "BlueNova"
-  );
-  const [videoId, setVideoId] = useState(
-    localStorage.getItem("video_id") || ""
   );
 
   const [loading, setLoading] = useState(false);
@@ -29,8 +26,8 @@ export default function AnalyzePage() {
     useState<SalesLossPredictionResponse | null>(null);
 
   const submit = async () => {
-    if (!videoId) {
-      setError("Please enter a YouTube video ID");
+    if (!product) {
+      setError("Please enter a product name");
       return;
     }
 
@@ -38,16 +35,15 @@ export default function AnalyzePage() {
     setError("");
 
     try {
-      // 🔹 STEP 1: Fetch YouTube comments
+      // 🔹 STEP 1: Fetch YouTube comments from MULTIPLE top videos
       await api.post("/fetch-youtube-comments", null, {
         params: {
           product_name: product,
           brand_name: brand,
-          video_id: videoId,
         },
       });
 
-      // 🔹 STEP 2: Analyze sentiment
+      // 🔹 STEP 2: Analyze sentiment (YouTube only)
       const sentimentResp = await api.post<SentimentAnalysisResponse>(
         "/analyze-sentiment",
         {
@@ -82,7 +78,7 @@ export default function AnalyzePage() {
       {/* INPUT PANEL */}
       <div className="glass neon-border rounded-2xl p-5">
         <h2 className="text-2xl font-semibold text-white mb-4">
-          Product Analysis (YouTube)
+          Product Analysis (YouTube · Multi-Video)
         </h2>
 
         <div className="grid gap-3">
@@ -92,7 +88,7 @@ export default function AnalyzePage() {
               setProduct(e.target.value);
               localStorage.setItem("product_name", e.target.value);
             }}
-            placeholder="Product name"
+            placeholder="Product name (used as YouTube search)"
             className="rounded-xl border border-cyan-500/30 bg-slate-950 px-3 py-2 text-white"
           />
 
@@ -105,17 +101,12 @@ export default function AnalyzePage() {
             placeholder="Brand name"
             className="rounded-xl border border-cyan-500/30 bg-slate-950 px-3 py-2 text-white"
           />
-
-          <input
-            value={videoId}
-            onChange={(e) => {
-              setVideoId(e.target.value);
-              localStorage.setItem("video_id", e.target.value);
-            }}
-            placeholder="YouTube Video ID (e.g. dQw4w9WgXcQ)"
-            className="rounded-xl border border-cyan-500/30 bg-slate-950 px-3 py-2 text-white"
-          />
         </div>
+
+        <p className="mt-3 text-xs text-slate-400">
+          We automatically analyze comments from multiple top-viewed YouTube
+          videos related to the product.
+        </p>
 
         <button
           onClick={submit}
@@ -140,6 +131,9 @@ export default function AnalyzePage() {
               <p className="text-cyan-200">Average Sentiment</p>
               <p className="text-2xl text-white">
                 {sentiment.average_sentiment.toFixed(2)}
+              </p>
+              <p className="text-sm text-slate-300">
+                {sentiment.total_posts} YouTube comments analyzed
               </p>
             </div>
 

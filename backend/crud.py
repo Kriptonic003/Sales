@@ -201,3 +201,34 @@ def save_youtube_comments(
         db.refresh(post)
 
     return saved_posts
+from datetime import datetime
+import models
+
+def save_youtube_comments(
+    db,
+    product_name: str,
+    brand_name: str,
+    platform: str,
+    comments: list,
+):
+    posts = []
+
+    for c in comments:
+        post = models.SocialPost(
+            product_name=product_name,
+            brand_name=brand_name,
+            platform=platform,
+            content=c["text"],
+            posted_at=datetime.fromisoformat(
+                c["published_at"].replace("Z", "")
+            ).date(),
+        )
+        db.add(post)
+        posts.append(post)
+
+    db.commit()
+
+    for p in posts:
+        db.refresh(p)
+
+    return posts

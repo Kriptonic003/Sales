@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 import os
+from services.youtube_service import fetch_comments_from_top_videos
 
 from dotenv import load_dotenv
 
@@ -109,13 +110,12 @@ def chat(request: schemas.ChatRequest):
 # --------------------------------------------------
 
 @app.post("/fetch-youtube-comments")
-def fetch_and_store_youtube_comments(
+def fetch_youtube_comments_multi_video(
     product_name: str,
     brand_name: str,
-    video_id: str,
     db: Session = Depends(get_db),
 ):
-    comments = fetch_youtube_comments(video_id)
+    comments = fetch_comments_from_top_videos(product_name)
 
     if not comments:
         raise HTTPException(status_code=404, detail="No comments found")
@@ -129,6 +129,7 @@ def fetch_and_store_youtube_comments(
     )
 
     return {
-        "message": "YouTube comments fetched and stored",
-        "count": len(saved),
+        "message": "YouTube comments fetched from multiple top videos",
+        "videos_used": "Top viewed videos",
+        "comments_saved": len(saved),
     }
