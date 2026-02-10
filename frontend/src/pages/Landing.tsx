@@ -8,7 +8,7 @@ export default function LandingPage() {
         <div className="max-w-2xl">
           <p className="text-sm uppercase tracking-[0.3em] text-cyan-200/80">AI Sentiment + Sales</p>
           <h1 className="mt-3 text-4xl font-extrabold text-white md:text-5xl">
-            Predict Sales Loss from Twitter & Reddit Before It Hits Revenue.
+            Predict Sales Loss from Yotube Before It Hits Revenue.
           </h1>
           <p className="mt-4 text-lg text-slate-200">
             We fuse social sentiment, volume, and your sales history to flag drops early. See risk levels, AI
